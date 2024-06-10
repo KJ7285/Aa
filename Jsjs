@@ -1,0 +1,91 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Initialize global variables
+getgenv().highlights = false
+getgenv().RGBColor = false
+
+-- Function to create a rainbow color
+local function getRainbowColor(t)
+    local r = math.sin(t * 2 * math.pi) * 0.5 + 0.5
+    local g = math.sin(t * 2 * math.pi + 2 * math.pi / 3) * 0.5 + 0.5
+    local b = math.sin(t * 2 * math.pi + 4 * math.pi / 3) * 0.5 + 0.5
+    return Color3.new(r, g, b)
+end
+
+-- Function to create a highlight instance for a character
+local function createHighlight(character)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = character
+    highlight.Adornee = character
+    highlight.FillColor = Color3.new(1, 1, 1) -- Initial color
+    highlight.OutlineTransparency = 0.5 -- Make the outline visible
+    return highlight
+end
+
+-- Function to apply or remove highlights
+local function updateHighlights()
+    if getgenv().highlights then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character and not player.Character:FindFirstChildOfClass("Highlight") then
+                createHighlight(player.Character)
+            end
+        end
+    else
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then
+                local highlight = player.Character:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Initial application of highlights
+updateHighlights()
+
+-- Apply the highlight effect to new players joining
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if getgenv().highlights then
+            createHighlight(character)
+        end
+    end)
+end)
+
+-- Update the rainbow color over time
+RunService.RenderStepped:Connect(function(deltaTime)
+    if getgenv().highlights and getgenv().RGBColor then
+        local time = tick()
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then
+                local highlight = player.Character:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight.FillColor = getRainbowColor(time + player.UserId * 0.1)
+                end
+            end
+        end
+    end
+end)
+
+-- Monitor changes to global variables
+getgenv().highlightsChanged = function()
+    updateHighlights()
+end
+
+getgenv().RGBColorChanged = function()
+    if getgenv().RGBColor then
+        -- Apply rainbow effect immediately if RGBColor is enabled
+        local time = tick()
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then
+                local highlight = player.Character:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight.FillColor = getRainbowColor(time + player.UserId * 0.1)
+                end
+            end
+        end
+    end
+end
